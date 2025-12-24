@@ -640,7 +640,7 @@ function setupTouchAndClick() {
     });
     container.addEventListener('click', (e) => {
         const moveDist = Math.hypot(e.clientX - STATE.touch.startX, e.clientY - STATE.touch.startY);
-        if (moveDist > 10) return; 
+        if (moveDist > 30) return; 
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
@@ -1563,10 +1563,33 @@ function processGestures(result) {
         if (extensionRatio < 1.5) { STATE.mode = 'TREE'; STATE.focusTarget = null; }
         else if (pinchRatio < 0.35) {
             if (STATE.mode !== 'FOCUS') {
-                STATE.mode = 'FOCUS';
-                const photos = particleSystem.filter(p => p.type === 'PHOTO');
-                if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random()*photos.length)].mesh;
+    STATE.mode = 'FOCUS';
+    const photos = particleSystem.filter(p => p.type === 'PHOTO');
+    
+    if (photos.length) {
+        // --- 修改开始：计算哪张照片离摄像机最近（也就是最靠前的那张） ---
+        let closestPhoto = null;
+        let minDistance = Infinity;
+        const cameraPos = camera.position;
+        const worldPos = new THREE.Vector3();
+
+        photos.forEach(p => {
+            // 获取照片的世界坐标
+            p.mesh.getWorldPosition(worldPos);
+            // 计算距离
+            const dist = worldPos.distanceTo(cameraPos);
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestPhoto = p;
             }
+        });
+        
+        if (closestPhoto) {
+            STATE.focusTarget = closestPhoto.mesh;
+        }
+        // --- 修改结束 ---
+    }
+}
         } else if (extensionRatio > 1.7) { STATE.mode = 'SCATTER'; STATE.focusTarget = null; }
     } else {
         STATE.hand.detected = false;
@@ -1724,4 +1747,5 @@ init();
     </script>
 </body>
 </html>
+
 
